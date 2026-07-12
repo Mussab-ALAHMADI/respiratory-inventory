@@ -563,7 +563,16 @@ document.addEventListener('keydown', (e)=>{
     scanBuffer += e.key;
     console.log('[SCAN DEBUG] buffer now =', JSON.stringify(scanBuffer));
     clearTimeout(scanTimer);
-    scanTimer = setTimeout(()=>{ scanBuffer=''; }, 300);
+    // Some scanners don't send an Enter terminator at all, or send it too late.
+    // If no new keystrokes arrive for a bit, treat the buffer as a finished scan
+    // instead of silently discarding it.
+    scanTimer = setTimeout(()=>{
+      if(scanBuffer.length > 0){
+        console.log('[SCAN DEBUG] timeout fallback, treating buffer as finished scan =', JSON.stringify(scanBuffer));
+        handleScan(scanBuffer);
+      }
+      scanBuffer = '';
+    }, 300);
   }
 });
 
