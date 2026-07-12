@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Respiratory Supply Tracker</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
+<style>
+  :root{
+    --ink:#0f2a28;
+    --paper:#f6f3ec;
+    --card:#ffffff;
+    --line:#dcd6c6;
+    --teal:#0f6e56;
+    --teal-deep:#083d31;
+    --teal-pale:#e1f0ea;
+    --amber:#b5772a;
+    --amber-pale:#f7ecd9;
+    --red:#a3352c;
+    --red-pale:#f8e6e2;
+    --mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Tahoma,Arial,sans-serif;
+    min-height:100vh;
+  }
+  .wrap{max-width:1040px;margin:0 auto;padding:0 20px 80px;}
+
+  .org-banner{
+    background:var(--teal-deep);color:#fff;text-align:center;
+    padding:10px 16px;font-family:var(--mono);letter-spacing:.3px;
+    display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;
+  }
+  .org-banner img{
+    height:56px;width:56px;object-fit:contain;flex-shrink:0;
+    background:#fff;border-radius:50%;padding:5px;
+  }
+  .org-banner .org-text{line-height:1.5;}
+  .org-banner .l1{font-size:12.5px;font-weight:700;letter-spacing:.5px;}
+  .org-banner .l2{font-size:11.5px;opacity:.85;margin-top:3px;}
+  .org-banner .l3{font-size:11px;opacity:.7;margin-top:3px;letter-spacing:1px;}
+
+  header.top{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:2px solid var(--ink);
+    padding:24px 0 16px;margin-bottom:24px;flex-wrap:wrap;gap:12px;
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{
+    width:40px;height:40px;border-radius:8px;background:var(--teal-deep);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;flex-shrink:0;
+  }
+  h1{font-size:19px;font-weight:700;margin:0;letter-spacing:.2px;}
+  .sub{font-size:12.5px;color:#5c6d68;margin-top:2px;font-family:var(--mono);}
+  .clock{font-family:var(--mono);font-size:12.5px;color:#5c6d68;text-align:right;}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px;}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;}
+  .stat .n{font-size:26px;font-weight:700;font-family:var(--mono);line-height:1;}
+  .stat .l{font-size:12px;color:#5c6d68;margin-top:6px;}
+  .stat.warn .n{color:var(--red);}
+
+  .panel{
+    background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:20px;margin-bottom:20px;
+  }
+  .panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+  .panel-head h2{font-size:14px;margin:0;text-transform:uppercase;letter-spacing:.6px;color:#5c6d68;font-weight:700;}
+
+  .scan-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .item-chip{
+    display:flex;align-items:center;gap:8px;
+    border:1px solid var(--line);background:var(--paper);
+    padding:10px 14px;border-radius:8px;cursor:pointer;font-size:13.5px;
+    transition:.12s;
+  }
+  .item-chip:hover{border-color:var(--teal);}
+  .item-chip.active{background:var(--teal-deep);color:#fff;border-color:var(--teal-deep);}
+  .item-chip i{font-size:17px;}
+
+  .active-item{
+    display:none;
+    border-top:1px dashed var(--line);
+    margin-top:18px;padding-top:18px;
+  }
+  .active-item.show{display:block;}
+  .ai-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:18px;}
+  .ai-name{font-size:20px;font-weight:700;}
+  .ai-meta{font-size:12.5px;color:#5c6d68;font-family:var(--mono);margin-top:2px;}
+  .qty-block{text-align:center;background:var(--teal-pale);border-radius:10px;padding:18px 24px;min-width:150px;}
+  .qty-block.low{background:var(--red-pale);}
+  .qty-num{font-size:36px;font-weight:700;font-family:var(--mono);color:var(--teal-deep);}
+  .qty-block.low .qty-num{color:var(--red);}
+  .qty-label{font-size:11.5px;color:#5c6d68;margin-top:2px;text-transform:uppercase;letter-spacing:.5px;}
+
+  .action-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  input[type=number]{
+    width:80px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;
+    font-size:14px;font-family:var(--mono);background:var(--paper);color:var(--ink);
+  }
+  input[type=text]{
+    padding:9px 10px;border:1px solid var(--line);border-radius:8px;
+    font-size:13.5px;background:var(--paper);color:var(--ink);flex:1;min-width:140px;
+  }
+  button{
+    border:none;border-radius:8px;padding:10px 18px;font-size:13.5px;font-weight:600;
+    cursor:pointer;transition:.12s;display:inline-flex;align-items:center;gap:6px;
+  }
+  button.pull{background:var(--red-pale);color:var(--red);}
+  button.pull:hover{background:#f0d0cb;}
+  button.stock{background:var(--teal-pale);color:var(--teal-deep);}
+  button.stock:hover{background:#cde8dd;}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--ink);}
+  button.ghost:hover{border-color:var(--teal);}
+  button.primary{background:var(--teal-deep);color:#fff;}
+  button.primary:hover{background:var(--teal);}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{
+    text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;
+    color:#5c6d68;font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);
+  }
+  td{padding:9px 10px;border-bottom:1px solid var(--line);}
+  tr:last-child td{border-bottom:none;}
+  .badge{
+    font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;
+    display:inline-block;
+  }
+  .badge.out{background:var(--red-pale);color:var(--red);}
+  .badge.in{background:var(--teal-pale);color:var(--teal-deep);}
+  .row-item{display:flex;align-items:center;gap:8px;}
+  .row-item i{font-size:16px;color:#5c6d68;}
+  .time-cell{color:#5c6d68;font-family:var(--mono);font-size:12px;}
+  .empty{padding:30px;text-align:center;color:#8a958f;font-size:13px;}
+
+  .add-form{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+  .footer-note{font-size:12px;color:#8a958f;text-align:center;margin-top:24px;line-height:1.7;}
+
+  .credit-block{
+    margin-top:28px;padding-top:18px;border-top:1px solid var(--line);
+    text-align:center;font-family:var(--mono);font-size:11px;color:#8a958f;line-height:1.9;
+  }
+
+  @media(max-width:640px){
+    .stats{grid-template-columns:repeat(2,1fr);}
+    .ai-head{flex-direction:column;align-items:flex-start;}
+  }
+</style>
+</head>
+<body>
+
+<div class="org-banner">
+  <img src="Ministry_NGHA_logo.jpg" alt="Ministry of National Guard – Health Affairs logo">
+  <div class="org-text">
+    <div class="l1">MINISTRY OF NATIONAL GUARD – HEALTH AFFAIRS</div>
+    <div class="l2">Al-Qassim Region &nbsp;•&nbsp; King Abdullah Specialized Hospital</div>
+    <div class="l3">RESPIRATORY DEPARTMENT</div>
+  </div>
+  <img src="RT_LOGO2.png" alt="Respiratory Services KASH-QS logo">
+</div>
+
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <div class="brand-mark"><i class="ti ti-lungs"></i></div>
+      <div>
+        <h1>Respiratory Supply Tracker</h1>
+        <div class="sub" id="dateLine">—</div>
+      </div>
+    </div>
+    <div class="clock" id="clockLine">Loading…</div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="n" id="statItems">0</div><div class="l">Total Items</div></div>
+    <div class="stat"><div class="n" id="statTotal">0</div><div class="l">Total Units</div></div>
+    <div class="stat warn"><div class="n" id="statLow">0</div><div class="l">Low Stock Items</div></div>
+    <div class="stat"><div class="n" id="statMoves">0</div><div class="l">Moves Today</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Scan / Select Item</h2>
+      <button class="ghost" id="toggleAddBtn"><i class="ti ti-plus" aria-hidden="true"></i>Add New Item</button>
+    </div>
+    <div class="scan-row" id="chipRow"></div>
+
+    <div class="add-form" id="addForm" style="display:none">
+      <input type="text" id="newItemName" placeholder="Item name e.g. NIV Mask">
+      <input type="text" id="newItemCode" placeholder="Barcode e.g. ITEM-NIV" style="font-family:var(--mono)">
+      <input type="number" id="newItemQty" placeholder="Starting quantity" style="width:150px">
+      <input type="number" id="newItemMin" placeholder="Low-stock threshold" style="width:150px">
+      <button class="primary" id="saveNewItem"><i class="ti ti-check" aria-hidden="true"></i>Save Item</button>
+    </div>
+
+    <div class="active-item" id="activeBlock">
+      <div class="ai-head">
+        <div>
+          <div class="ai-name" id="aiName">—</div>
+          <div class="ai-meta" id="aiMeta">—</div>
+        </div>
+        <div class="qty-block" id="qtyBlock">
+          <div class="qty-num" id="qtyNum">0</div>
+          <div class="qty-label">Current Quantity</div>
+        </div>
+      </div>
+      <div class="action-row">
+        <input type="number" id="moveQty" value="1" min="1">
+        <button class="pull" id="pullBtn"><i class="ti ti-arrow-down" aria-hidden="true"></i>Pull</button>
+        <button class="stock" id="stockBtn"><i class="ti ti-arrow-up" aria-hidden="true"></i>Restock</button>
+        <input type="text" id="staffName" placeholder="Staff name (optional)">
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="scannerPanel">
+    <div class="panel-head">
+      <h2><i class="ti ti-barcode" aria-hidden="true"></i>&nbsp;Scanner Mode</h2>
+      <span id="scannerStatus" style="font-size:12px;color:#5c6d68;font-family:var(--mono)">Ready to scan</span>
+    </div>
+    <p style="font-size:13px;color:#5c6d68;margin:0 0 14px">
+      Connect the scanner and scan the item's barcode first, then scan "Pull" or "Restock". No need to touch the screen.
+    </p>
+    <div style="display:flex;gap:20px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:11px;color:#5c6d68;text-transform:uppercase;margin-bottom:6px">Fixed action codes (print once)</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <div style="border:1px solid var(--line);border-radius:8px;padding:10px 16px;text-align:center">
+            <div style="font-family:var(--mono);font-size:12px;color:#5c6d68">ACTION_PULL</div>
+            <div style="font-weight:700;color:var(--red)">Pull</div>
+          </div>
+          <div style="border:1px solid var(--line);border-radius:8px;padding:10px 16px;text-align:center">
+            <div style="font-family:var(--mono);font-size:12px;color:#5c6d68">ACTION_STOCK</div>
+            <div style="font-weight:700;color:var(--teal-deep)">Restock</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Activity Log</h2>
+      <button class="ghost" id="clearLogBtn"><i class="ti ti-eraser" aria-hidden="true"></i>Clear Log</button>
+    </div>
+    <div id="logWrap"></div>
+  </div>
+
+  <div class="credit-block">
+    <div>Done by ICU &nbsp;|&nbsp; Developed &amp; Designed by MUSAB ALAHMADI</div>
+    <div>&copy; 2026 MUSAB ALAHMADI. All Rights Reserved.</div>
+  </div>
+
+</div>
+
+<input type="text" id="scannerInput" autofocus style="position:fixed;top:-100px;opacity:0">
+<div id="scanToast" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--teal-deep);color:#fff;padding:12px 22px;border-radius:30px;font-size:14px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.2);z-index:999"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDg0ARgdrAVWn6W4aWBgzvXtwpqxx2z9Zk",
+  authDomain: "respiratory-inventory.firebaseapp.com",
+  databaseURL: "https://respiratory-inventory-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "respiratory-inventory",
+  storageBucket: "respiratory-inventory.firebasestorage.app",
+  messagingSenderId: "285407612205",
+  appId: "1:285407612205:web:b6dc34deea2afb762097a4"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getDatabase(fbApp);
+
+const DEFAULT_ITEMS = [
+  {id:'nc',    name:'Nasal Cannula',              icon:'ti-air-conditioning',    qty:40, min:15, code:'ITEM-NC'},
+  {id:'fm',    name:'Simple Face Mask',            icon:'ti-medical-cross',       qty:30, min:15, code:'ITEM-FM'},
+  {id:'nrb',   name:'Non-Rebreather Mask',         icon:'ti-mask',                qty:20, min:10, code:'ITEM-NRB'},
+  {id:'vm',    name:'Venturi Mask',                icon:'ti-mask',                qty:20, min:10, code:'ITEM-VM'},
+  {id:'niv',   name:'NIV Mask (Full Face)',        icon:'ti-lungs',               qty:12, min:10, code:'ITEM-NIV'},
+  {id:'nivn',  name:'NIV Mask (Nasal)',            icon:'ti-lungs',               qty:12, min:10, code:'ITEM-NIVN'},
+  {id:'ot',    name:'Oxygen Tubing',               icon:'ti-circuit-switch-open', qty:25, min:10, code:'ITEM-OT'},
+  {id:'sc',    name:'Suction Catheter',            icon:'ti-vacuum-cleaner',      qty:20, min:10, code:'ITEM-SC'},
+  {id:'yt',    name:'Yankauer Suction Tip',        icon:'ti-vacuum-cleaner',      qty:20, min:10, code:'ITEM-YT'},
+  {id:'vca',   name:'Ventilator Circuit (Adult)',  icon:'ti-air-conditioning',    qty:15, min:8,  code:'ITEM-VCA'},
+  {id:'vcn',   name:'Ventilator Circuit (Neonatal)', icon:'ti-air-conditioning',  qty:10, min:5,  code:'ITEM-VCN'},
+  {id:'hme',   name:'HME Filter',                  icon:'ti-filter',              qty:30, min:15, code:'ITEM-HME'},
+  {id:'css',   name:'Closed Suction System',       icon:'ti-vacuum-cleaner',      qty:15, min:8,  code:'ITEM-CSS'},
+  {id:'ett',   name:'ETT (Endotracheal Tube)',     icon:'ti-medical-cross',       qty:20, min:10, code:'ITEM-ETT'},
+  {id:'tt',    name:'Tracheostomy Tube',           icon:'ti-medical-cross',       qty:15, min:8,  code:'ITEM-TT'},
+  {id:'sp',    name:'Spacer Device',                icon:'ti-flask',              qty:20, min:10, code:'ITEM-SP'},
+  {id:'neb',   name:'Nebulizer Kit',                icon:'ti-flask',              qty:20, min:10, code:'ITEM-NEB'},
+  {id:'cpap',  name:'CPAP Mask',                    icon:'ti-mask',               qty:12, min:8,  code:'ITEM-CPAP'},
+  {id:'opa',   name:'Oropharyngeal Airway (OPA)',   icon:'ti-medical-cross',      qty:25, min:12, code:'ITEM-OPA'},
+  {id:'npa',   name:'Nasopharyngeal Airway (NPA)',  icon:'ti-medical-cross',      qty:25, min:12, code:'ITEM-NPA'}
+];
+
+let items = [];
+let logs = [];
+let activeId = null;
+
+async function loadState(){
+  const statusEl = document.getElementById('scannerStatus');
+  try{
+    const itemsSnap = await get(ref(db, 'items'));
+    if(itemsSnap.exists()){
+      items = itemsSnap.val();
+    }else{
+      items = DEFAULT_ITEMS;
+      await set(ref(db, 'items'), items);
+    }
+    const logsSnap = await get(ref(db, 'logs'));
+    logs = logsSnap.exists() ? logsSnap.val() : [];
+    renderAll();
+
+    onValue(ref(db, 'items'), (snap)=>{
+      if(snap.exists()){ items = snap.val(); renderAll(); }
+    }, (err)=>{ console.error('items onValue error:', err); if(statusEl) statusEl.textContent = '❌ فشل الاتصال بقاعدة البيانات'; });
+    onValue(ref(db, 'logs'), (snap)=>{
+      if(snap.exists()){ logs = snap.val(); renderAll(); }
+    }, (err)=>{ console.error('logs onValue error:', err); });
+  }catch(err){
+    console.error('loadState failed:', err);
+    items = DEFAULT_ITEMS; // fall back to local defaults so the app is usable even if Firebase is unreachable
+    logs = [];
+    renderAll();
+    if(statusEl){
+      statusEl.textContent = '❌ تعذّر الاتصال بـ Firebase — تحقق من صلاحيات القاعدة (Rules) أو رابط databaseURL';
+      statusEl.style.color = 'var(--red)';
+    }
+  }
+}
+
+async function saveItems(){
+  await set(ref(db, 'items'), items);
+}
+async function saveLogs(){
+  await set(ref(db, 'logs'), logs);
+}
+
+function fmtTime(ts){
+  const d = new Date(ts);
+  return d.toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+function renderChips(){
+  const wrap = document.getElementById('chipRow');
+  const list = Array.isArray(items) ? items : Object.values(items||{});
+  wrap.innerHTML = list.map(it => `
+    <div class="item-chip ${it.id===activeId?'active':''}" data-id="${it.id}" title="Barcode: ${it.code||'—'}">
+      <i class="ti ${it.icon}" aria-hidden="true"></i>${it.name}
+      <span style="font-family:var(--mono);font-size:10.5px;opacity:.65">${it.code||''}</span>
+    </div>
+  `).join('');
+  wrap.querySelectorAll('.item-chip').forEach(el=>{
+    el.addEventListener('click', ()=>{ activeId = el.dataset.id; renderAll(); });
+  });
+}
+
+function getItemsList(){
+  return Array.isArray(items) ? items : Object.values(items||{});
+}
+
+function renderActive(){
+  const block = document.getElementById('activeBlock');
+  const it = getItemsList().find(x=>x.id===activeId);
+  if(!it){ block.classList.remove('show'); return; }
+  block.classList.add('show');
+  document.getElementById('aiName').textContent = it.name;
+  document.getElementById('aiMeta').textContent = 'Low-stock threshold: ' + it.min + ' units';
+  document.getElementById('qtyNum').textContent = it.qty;
+  const qtyBlock = document.getElementById('qtyBlock');
+  qtyBlock.classList.toggle('low', it.qty <= it.min);
+}
+
+function renderStats(){
+  const list = getItemsList();
+  document.getElementById('statItems').textContent = list.length;
+  document.getElementById('statTotal').textContent = list.reduce((a,b)=>a+(b.qty||0),0);
+  document.getElementById('statLow').textContent = list.filter(i=>i.qty<=i.min).length;
+  const today = new Date().toDateString();
+  const logList = Array.isArray(logs) ? logs : Object.values(logs||{});
+  document.getElementById('statMoves').textContent = logList.filter(l=> new Date(l.ts).toDateString()===today).length;
+}
+
+function renderLog(){
+  const wrap = document.getElementById('logWrap');
+  const logList = Array.isArray(logs) ? logs : Object.values(logs||{});
+  const sorted = [...logList].sort((a,b)=>b.ts-a.ts);
+  if(sorted.length===0){
+    wrap.innerHTML = '<div class="empty">No activity recorded yet</div>';
+    return;
+  }
+  const rows = sorted.slice(0,40).map(l=>`
+    <tr>
+      <td><div class="row-item"><i class="ti ${l.icon}" aria-hidden="true"></i>${l.name}</div></td>
+      <td><span class="badge ${l.type==='Pull'?'out':'in'}">${l.type}</span></td>
+      <td>${l.qty}</td>
+      <td>${l.staff || '—'}</td>
+      <td class="time-cell">${fmtTime(l.ts)}</td>
+    </tr>
+  `).join('');
+  wrap.innerHTML = `
+    <table>
+      <thead><tr><th>Item</th><th>Type</th><th>Qty</th><th>Staff</th><th>Time</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function renderAll(){
+  renderChips();
+  renderActive();
+  renderStats();
+  renderLog();
+}
+
+async function doMove(type){
+  const list = getItemsList();
+  const it = list.find(x=>x.id===activeId);
+  if(!it) return;
+  const qtyInput = document.getElementById('moveQty');
+  const qty = Math.max(1, parseInt(qtyInput.value) || 1);
+  const staff = document.getElementById('staffName').value.trim();
+
+  if(type==='Pull'){
+    it.qty = Math.max(0, it.qty - qty);
+  }else{
+    it.qty = it.qty + qty;
+  }
+  items = list;
+  const logList = Array.isArray(logs) ? logs : Object.values(logs||{});
+  logList.unshift({name:it.name, icon:it.icon, type, qty, staff, ts:Date.now()});
+  logs = logList;
+  renderAll(); // update the screen immediately, regardless of whether the save succeeds
+  try{
+    await saveItems();
+    await saveLogs();
+  }catch(err){
+    console.error('Firebase save failed:', err);
+    showToast('⚠️ تم التحديث محليًا لكن فشل الحفظ في Firebase — تحقق من صلاحيات القاعدة (Rules)', false);
+  }
+}
+
+document.getElementById('pullBtn').addEventListener('click', ()=>doMove('Pull'));
+document.getElementById('stockBtn').addEventListener('click', ()=>doMove('Restock'));
+
+document.getElementById('toggleAddBtn').addEventListener('click', ()=>{
+  const f = document.getElementById('addForm');
+  f.style.display = f.style.display==='none' ? 'flex' : 'none';
+});
+
+document.getElementById('saveNewItem').addEventListener('click', async ()=>{
+  const name = document.getElementById('newItemName').value.trim();
+  let code = document.getElementById('newItemCode').value.trim().toUpperCase();
+  const qty = parseInt(document.getElementById('newItemQty').value) || 0;
+  const min = parseInt(document.getElementById('newItemMin').value) || 10;
+  if(!name) return;
+  const id = 'it_' + Date.now();
+  if(!code) code = 'ITEM-' + id.slice(-5).toUpperCase();
+  const list = getItemsList();
+  list.push({id, name, icon:'ti-box', qty, min, code});
+  items = list;
+  await saveItems();
+  document.getElementById('newItemName').value='';
+  document.getElementById('newItemCode').value='';
+  document.getElementById('newItemQty').value='';
+  document.getElementById('newItemMin').value='';
+  document.getElementById('addForm').style.display='none';
+  activeId = id;
+  renderAll();
+});
+
+document.getElementById('clearLogBtn').addEventListener('click', async ()=>{
+  if(!confirm('This will permanently clear the activity log. Continue?')) return;
+  logs = [];
+  await saveLogs();
+  renderAll();
+});
+
+let scanBuffer = '';
+let scanTimer = null;
+const scannerInputEl = document.getElementById('scannerInput');
+
+function showToast(msg, ok=true){
+  const t = document.getElementById('scanToast');
+  t.textContent = msg;
+  t.style.background = ok ? 'var(--teal-deep)' : 'var(--red)';
+  t.style.display = 'block';
+  clearTimeout(t._hideTimer);
+  t._hideTimer = setTimeout(()=>{ t.style.display='none'; }, 2200);
+}
+
+async function handleScan(code){
+  code = code.trim().toUpperCase();
+  if(!code) return;
+
+  if(code === 'ACTION_PULL' || code === 'ACTION_STOCK'){
+    const list = getItemsList();
+    const it = list.find(x=>x.id===activeId);
+    if(!it){
+      showToast('Scan the item barcode first', false);
+      return;
+    }
+    const type = code === 'ACTION_PULL' ? 'Pull' : 'Restock';
+    const qty = 1;
+    if(type==='Pull'){ it.qty = Math.max(0, it.qty - qty); }
+    else{ it.qty = it.qty + qty; }
+    items = list;
+    const logList = Array.isArray(logs) ? logs : Object.values(logs||{});
+    logList.unshift({name:it.name, icon:it.icon, type, qty, staff:'Scanner', ts:Date.now()});
+    logs = logList;
+    renderAll(); // update the screen immediately, regardless of whether the save succeeds
+    showToast(`${type}: ${it.name} — now ${it.qty}`, type==='Restock');
+    try{
+      await saveItems();
+      await saveLogs();
+    }catch(err){
+      console.error('Firebase save failed:', err);
+      showToast('⚠️ تم التحديث محليًا لكن فشل الحفظ في Firebase — تحقق من صلاحيات القاعدة (Rules)', false);
+    }
+    return;
+  }
+
+  const match = getItemsList().find(x => (x.code||'').toUpperCase() === code);
+  if(match){
+    activeId = match.id;
+    renderAll();
+    showToast(`Selected: ${match.name}`, true);
+  }else{
+    showToast('Unknown code: ' + code, false);
+  }
+}
+
+function isTypingInRealField(el){
+  if(!el) return false;
+  const tag = el.tagName;
+  return el.id !== 'scannerInput' && (tag==='INPUT' || tag==='TEXTAREA');
+}
+
+document.addEventListener('keydown', (e)=>{
+  if(isTypingInRealField(document.activeElement)) return;
+  if(e.key === 'Enter'){
+    if(scanBuffer.length > 0){
+      handleScan(scanBuffer);
+      scanBuffer = '';
+    }
+    return;
+  }
+  if(e.key.length === 1){
+    scanBuffer += e.key;
+    clearTimeout(scanTimer);
+    scanTimer = setTimeout(()=>{ scanBuffer=''; }, 300);
+  }
+});
+
+window.addEventListener('load', ()=>{ scannerInputEl.focus(); });
+
+// Keep the hidden scanner input focused so barcode scanners (which type like a keyboard)
+// keep working even after clicking buttons, chips, etc. Skip refocusing while the user
+// is actually typing in a real field (qty, staff name, add-item form...).
+document.addEventListener('click', (e)=>{
+  if(!isTypingInRealField(e.target)){
+    setTimeout(()=> scannerInputEl.focus(), 30);
+  }
+});
+document.querySelectorAll('input[type=text], input[type=number]').forEach(el=>{
+  if(el.id === 'scannerInput') return;
+  el.addEventListener('blur', ()=>{
+    setTimeout(()=>{
+      if(!isTypingInRealField(document.activeElement)){
+        scannerInputEl.focus();
+      }
+    }, 200);
+  });
+});
+
+function tickClock(){
+  const now = new Date();
+  document.getElementById('clockLine').textContent = now.toLocaleTimeString('en-US');
+  document.getElementById('dateLine').textContent = now.toLocaleDateString('en-US',{weekday:'long', year:'numeric', month:'long', day:'numeric'});
+}
+tickClock();
+setInterval(tickClock, 1000);
+
+loadState();
+</script>
+</body>
+</html>
