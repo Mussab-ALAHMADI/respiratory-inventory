@@ -498,6 +498,7 @@ function showToast(msg, ok=true){
 }
 
 async function handleScan(code){
+  console.log('[SCAN DEBUG] handleScan called with:', JSON.stringify(code));
   code = code.trim().toUpperCase();
   if(!code) return;
 
@@ -545,8 +546,13 @@ function isTypingInRealField(el){
 }
 
 document.addEventListener('keydown', (e)=>{
-  if(isTypingInRealField(document.activeElement)) return;
+  console.log('[SCAN DEBUG] keydown fired:', e.key, '| activeElement:', document.activeElement.id || document.activeElement.tagName);
+  if(isTypingInRealField(document.activeElement)) {
+    console.log('[SCAN DEBUG] blocked: typing in a real field');
+    return;
+  }
   if(e.key === 'Enter'){
+    console.log('[SCAN DEBUG] Enter pressed, buffer =', JSON.stringify(scanBuffer));
     if(scanBuffer.length > 0){
       handleScan(scanBuffer);
       scanBuffer = '';
@@ -555,6 +561,7 @@ document.addEventListener('keydown', (e)=>{
   }
   if(e.key.length === 1){
     scanBuffer += e.key;
+    console.log('[SCAN DEBUG] buffer now =', JSON.stringify(scanBuffer));
     clearTimeout(scanTimer);
     scanTimer = setTimeout(()=>{ scanBuffer=''; }, 300);
   }
